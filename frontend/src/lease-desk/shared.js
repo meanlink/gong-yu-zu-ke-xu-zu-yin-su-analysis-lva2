@@ -15,8 +15,8 @@ export function form(heading, fields, submit, path, refresh, {method='POST',extr
     event.preventDefault(); button.disabled=true;
     try {
       const body={...Object.fromEntries(new FormData(view)),...extra};
-      await api(path,{method,body:JSON.stringify(body)});
-      toast('业务记录已保存','success'); await refresh();
+      const saved=await api(path,{method,body:JSON.stringify(body)});
+      toast(saved&&saved.message?saved.message:'业务记录已保存','success'); await refresh();
     } catch(error) { toast(error.message,'error'); }
     finally { button.disabled=false; }
   }},[el('h3',{text:heading}),el('div',{class:'lease-grid'},fields),button]);

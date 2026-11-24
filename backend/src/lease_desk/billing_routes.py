@@ -19,6 +19,11 @@ def record(offer_id:int,payload:ContractIn,user=Depends(coordinator)):
     return billing.sign(offer_id,payload,user)
 
 
+@router.post('/{offer_id}/retry',status_code=201)
+def retry(offer_id:int,user=Depends(coordinator)):
+    return billing.retry(offer_id,user)
+
+
 @router.post('/{offer_id}/invoices',status_code=201)
 def check(offer_id:int,payload:InvoiceIn,user=Depends(analyst)):
     return billing.check_invoice(offer_id,payload,user)

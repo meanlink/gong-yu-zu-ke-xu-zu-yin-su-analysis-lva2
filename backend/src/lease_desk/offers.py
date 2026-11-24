@@ -63,6 +63,9 @@ def transition(offer_id,payload,user):
     with connect() as conn:
         row=locked(conn,offer_id)
         status=row['status']
+        if payload.decision in ('decline','withdraw') and conn.execute(
+                "SELECT 1 FROM renewal_contract_pending WHERE offer_id=%s AND status='pending'",(offer_id,)).fetchone():
+            raise HTTPException(409,'该报价有待处理的签约凭证，请先完成补签')
         if payload.decision=='issue':
             if status!='draft' or row['valid_through']<today():
                 raise HTTPException(409,'只能审批尚未过期的报价草稿')

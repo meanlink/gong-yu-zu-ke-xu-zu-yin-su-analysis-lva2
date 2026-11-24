@@ -118,9 +118,11 @@ def schedule_checkout(item, user):
     with connect() as conn:
         task, tenant = lock_context(conn, item.task_id, must_be_open=True)
         expiry = tenant['lease_end_date']
-        if conn.execute("""SELECT 1 FROM renewal_offer WHERE tenant_id=%s AND lease_end=%s
-                AND (status='signed' OR (status='issued' AND valid_through>=%s))""",(tenant['id'],expiry,lease_today())).fetchone():
-            raise HTTPException(409, '有效报价或已签合同阻止安排退租交接')
+        if conn.execute("""SELECT 1 FROM renewal_offer o WHERE o.tenant_id=%s AND o.lease_end=%s
+                AND (o.status='signed' OR (o.status='issued' AND o.valid_through>=%s)
+                OR EXISTS(SELECT 1 FROM renewal_contract_pending p WHERE p.offer_id=o.id AND p.status='pending'))""",
+                (tenant['id'],expiry,lease_today())).fetchone():
+            raise HTTPException(409, '有效报价、已签合同或待处理签约凭证阻止安排退租交接')
         if item.starts_at <= datetime.now(timezone.utc) or not expiry - timedelta(days=30) <= local.date() <= expiry + timedelta(days=7):
             raise HTTPException(422, '请选择未来时段，且交接日期在租期结束前 30 日至结束后 7 日')
         conn.execute('SELECT id FROM properties WHERE id=%s FOR UPDATE', (tenant['property_id'],))
